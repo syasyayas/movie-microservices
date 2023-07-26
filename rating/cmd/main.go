@@ -15,7 +15,7 @@ import (
 	"moviedata.com/pkg/discovery"
 	"moviedata.com/rating/internal/controller/rating"
 	grpchandler "moviedata.com/rating/internal/handler/grpc"
-	"moviedata.com/rating/internal/repository/memory"
+	"moviedata.com/rating/internal/repository/mysql"
 )
 
 const serviceName = "rating"
@@ -53,7 +53,10 @@ func main() {
 
 	log.Println("Starting the rating service")
 
-	repo := memory.New()
+	repo, err := mysql.New()
+	if err != nil {
+		panic(err)
+	}
 	ctrl := rating.New(repo, nil)
 	h := grpchandler.New(ctrl)
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
