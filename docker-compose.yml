@@ -12,6 +12,7 @@ services:
         - backend
     depends_on:
       - consul
+      - mysql
 
   metadata:
     build:
@@ -24,6 +25,7 @@ services:
         - backend
     depends_on:
       - consul
+      - mysql
 
   movie:
     build:
@@ -38,6 +40,21 @@ services:
       - rating
       - metadata
       - consul
+      - mysql
+
+  mysql:
+    image: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: "password"
+      MYSQL_DATABASE: "movieexample"
+    ports:
+      - "3306:3306"
+    volumes:
+      - "./schema/schema.sql:/docker-entrypoint-initdb.d/init.sql"
+    networks:
+        - backend
+
 
   consul:
     image: hashicorp/consul:latest

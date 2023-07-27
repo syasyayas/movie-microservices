@@ -9,16 +9,27 @@ tasks:
     env:
       GOOS: linux
       CGO_ENABLED: 0
+
   compose-up:
     cmds:
       - task: build_bin
       - cp ./bin/movie_main ./movie/main
       - cp ./bin/rating_main ./rating/main
       - cp ./bin/metadata_main ./metadata/main
-      - docker compose up --build
+      - docker compose up --build -d
+        
   clean:
     cmds:
       - rm -r ./bin
       - rm ./metadata/main
       - rm ./rating/main
       - rm ./movie/main
+
+  compose-up-clean:
+    cmds:
+      - task: compose-up
+      - task: clean
+
+  compose-down:
+    cmds:
+      - docker compose down --remove-orphans
