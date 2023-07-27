@@ -1,0 +1,55 @@
+version: '3'
+
+services:
+  rating:
+    build:
+      context: ./rating
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    restart: unless-stopped
+    networks:
+        - backend
+    depends_on:
+      - consul
+
+  metadata:
+    build:
+      context: ./metadata
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    restart: unless-stopped
+    networks:
+        - backend
+    depends_on:
+      - consul
+
+  movie:
+    build:
+      context: ./movie 
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    restart: unless-stopped
+    networks:
+        - backend
+    depends_on:
+      - rating
+      - metadata
+      - consul
+
+  consul:
+    image: hashicorp/consul:latest
+    container_name: consul-server1
+    restart: unless-stopped
+    networks:
+        - backend
+    ports:
+      - "8500:8500"
+      - "8600:8600/udp"
+      - "8600:8600/tcp"
+    command: "agent -server -ui -node=server-1 -bootstrap-expect=1 -client=0.0.0.0"
+
+networks:
+  backend:

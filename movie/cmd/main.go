@@ -36,9 +36,9 @@ func main() {
 		panic(err)
 	}
 
-	log.Printf("Starting the movie service on port: %d\n", cfg.APIConfig.port)
+	log.Printf("Starting the movie service on port: %d\n", cfg.APIConfig.Port)
 
-	registry, err := consul.NewRegistry("localhost:8500")
+	registry, err := consul.NewRegistry("consul:8500")
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +46,7 @@ func main() {
 	ctx := context.Background()
 
 	instanceID := discovery.GenerateInstanceID(serviceName)
-	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("localhost:%d", cfg.APIConfig.port)); err != nil {
+	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("movie:%d", cfg.APIConfig.Port)); err != nil {
 		panic(err)
 	}
 	go func() {
@@ -63,7 +63,7 @@ func main() {
 	ratingGateway := ratinggateway.New(registry)
 	ctrl := movie.New(ratingGateway, metadataGateway)
 	h := grpchandler.New(ctrl)
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", cfg.APIConfig.port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", cfg.APIConfig.Port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

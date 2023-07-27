@@ -1,0 +1,24 @@
+version: '3'
+
+tasks:
+  build_bin:
+    cmds:
+      - go build -v -o bin/metadata_main ./metadata/cmd/*.go
+      - go build -v -o bin/rating_main ./rating/cmd/*.go
+      - go build -v -o bin/movie_main ./movie/cmd/*.go
+    env:
+      GOOS: linux
+      CGO_ENABLED: 0
+  compose-up:
+    cmds:
+      - task: build_bin
+      - cp ./bin/movie_main ./movie/main
+      - cp ./bin/rating_main ./rating/main
+      - cp ./bin/metadata_main ./metadata/main
+      - docker compose up --build
+  clean:
+    cmds:
+      - rm -r ./bin
+      - rm ./metadata/main
+      - rm ./rating/main
+      - rm ./movie/main

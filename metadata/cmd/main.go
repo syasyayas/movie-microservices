@@ -29,7 +29,7 @@ func main() {
 	defer f.Close()
 	var cfg serviceConfig
 
-	registry, err := consul.NewRegistry("localhost:8500")
+	registry, err := consul.NewRegistry("consul:8500")
 	if err != nil {
 		panic(err)
 	}
@@ -42,7 +42,7 @@ func main() {
 	ctx := context.Background()
 	instanceID := discovery.GenerateInstanceID(serviceName)
 
-	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("localhost:%d", cfg.APIConfig.Port)); err != nil {
+	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("metadata:%d", cfg.APIConfig.Port)); err != nil {
 		panic(err)
 	}
 
@@ -59,7 +59,7 @@ func main() {
 	repo := memory.New()
 	ctrl := metadata.New(repo)
 	h := grpchandler.New(ctrl)
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", cfg.APIConfig.Port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", cfg.APIConfig.Port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
@@ -69,18 +69,4 @@ func main() {
 	if err := srv.Serve(lis); err != nil {
 		panic(err)
 	}
-}
-
-func omain() {
-	log.Println("Starting grpc metadata service")
-	repo := memory.New()
-	ctrl := metadata.New(repo)
-	h := grpchandler.New(ctrl)
-	lis, err := net.Listen("tcp", "localhost:8081")
-	if err != nil {
-		log.Fatalf("Failed to Listen: %v", err)
-	}
-	srv := grpc.NewServer()
-	gen.RegisterMetadataServiceServer(srv, h)
-	srv.Serve(lis)
 }

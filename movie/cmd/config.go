@@ -5,5 +5,5 @@ type serviceConfig struct {
 }
 
 type apiConfig struct {
-	port int `yaml:"port"`
+	Port int `yaml:"port"`
 }
