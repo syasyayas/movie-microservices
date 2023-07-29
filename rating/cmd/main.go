@@ -34,7 +34,7 @@ func main() {
 		panic(err)
 	}
 
-	log.Printf("Startinh the movie metadata service on port %d", cfg.APIConfig.Port)
+	log.Printf("Starting the movie rating service on port %d", cfg.APIConfig.Port)
 
 	registry, err := consul.NewRegistry("consul:8500")
 	if err != nil {
@@ -57,8 +57,6 @@ func main() {
 		}
 	}()
 	defer registry.Deregister(ctx, instanceID, serviceName)
-
-	log.Println("Starting the rating service")
 
 	repo, err := mysql.New()
 	if err != nil {

@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"errors"
+	"log"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -35,6 +36,7 @@ func (h *Handler) GetAggregatedRating(ctx context.Context, req *gen.GetAggregate
 }
 
 func (h *Handler) PutRating(ctx context.Context, req *gen.PutRatingRequest) (*gen.PutRatingResponse, error) {
+	log.Printf("Handling put request")
 	if req == nil || req.RecordId == "" || req.UserId == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "nil req or empty UserId or RecordId")
 	}
@@ -46,7 +48,7 @@ func (h *Handler) PutRating(ctx context.Context, req *gen.PutRatingRequest) (*ge
 			Value:  model.RatingValue(req.RatingValue),
 		})
 	if err != nil {
-		return nil, err
+		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return &gen.PutRatingResponse{}, nil
 }

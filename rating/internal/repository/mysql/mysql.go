@@ -14,7 +14,7 @@ type Repository struct {
 }
 
 func New() (*Repository, error) {
-	db, err := sql.Open("mysql", "root:password@/movieexample")
+	db, err := sql.Open("mysql", "root:password@tcp(mysql:3306)/movieexample")
 	if err != nil {
 		return nil, err
 	}
