@@ -3,6 +3,7 @@ package movie
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	metadatamodel "moviedata.com/metadata/pkg/model"
 	"moviedata.com/movie/internal/gateway"
@@ -41,12 +42,13 @@ func (c *Controller) Get(ctx context.Context, id string) (*model.MovieDetails, e
 	details := &model.MovieDetails{Metadata: *metadata}
 
 	rating, err := c.ratingGateway.GetAggregatedRating(ctx, ratingmodel.RecordID(id), ratingmodel.RecordTypeMovie)
-	if err != nil && errors.Is(err, gateway.ErrNotFound) {
+	if err != nil && !errors.Is(err, gateway.ErrNotFound) {
 		// proceed
 	} else if err != nil {
+		fmt.Println("WTFFFFF")
 		return nil, err
 	} else {
 		details.Rating = &rating
 	}
-	return details, err
+	return details, nil
 }

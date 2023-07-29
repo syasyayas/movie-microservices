@@ -16,8 +16,8 @@ import (
 	metadatagateway "moviedata.com/movie/internal/gateway/metadata/grpc"
 	ratinggateway "moviedata.com/movie/internal/gateway/rating/grpc"
 	grpchandler "moviedata.com/movie/internal/handler/grpc"
-	"moviedata.com/pkg/consul"
 	"moviedata.com/pkg/discovery"
+	"moviedata.com/pkg/discovery/consul"
 )
 
 const serviceName = "movie"

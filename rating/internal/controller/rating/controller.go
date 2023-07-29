@@ -9,7 +9,7 @@ import (
 )
 
 // ErrNotFound is returned when no ratings are found for a record.
-var ErrNotFound = errors.New("ratings not for a record")
+var ErrNotFound = errors.New("ASKHLJAHF:JAHDratings not found for a record")
 
 type ratingRepository interface {
 	Get(ctx context.Context, recordID model.RecordID, recordType model.RecordType) ([]model.Rating, error)

@@ -15,8 +15,8 @@ import (
 	"moviedata.com/metadata/internal/controller/metadata"
 	grpchandler "moviedata.com/metadata/internal/handler/grpc"
 	"moviedata.com/metadata/internal/repository/memory"
-	"moviedata.com/pkg/consul"
 	"moviedata.com/pkg/discovery"
+	"moviedata.com/pkg/discovery/consul"
 )
 
 const serviceName = "metadata"

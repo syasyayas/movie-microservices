@@ -33,3 +33,9 @@ tasks:
   compose-down:
     cmds:
       - docker compose down --remove-orphans
+
+  integration:
+    cmds:
+      - task: build_bin
+      - go run ./test/integration/main.go
+      - rm -r ./bin
