@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"gopkg.in/yaml.v3"
@@ -26,6 +27,10 @@ const serviceName = "rating"
 
 func main() {
 
+	logger, _ := zap.NewProduction()
+	logger = logger.With(zap.String("service", serviceName))
+	defer logger.Sync()
+
 	f, err := os.Open("base.yaml")
 	if err != nil {
 		panic(err)
@@ -34,39 +39,40 @@ func main() {
 	var cfg serviceConfig
 
 	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
-		panic(err)
+		logger.Fatal("Failed to open config", zap.Error(err))
 	}
 
-	log.Printf("Starting the movie rating service on port %d", cfg.APIConfig.Port)
+	logger.Info("Starting the rating service", zap.Int("port", cfg.APIConfig.Port))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	registry, err := consul.NewRegistry("consul:8500")
 	if err != nil {
-		panic(err)
+		logger.Fatal("Failed to connect to consul registry", zap.Error(err))
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	instanceID := discovery.GenerateInstanceID(serviceName)
-
 	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("rating:%d", cfg.APIConfig.Port)); err != nil {
-		panic(err)
+		logger.Fatal("Failed to register rating service in consul", zap.Error(err))
 	}
 
 	go func() {
 		for {
 			if err := registry.ReportHealthyState(instanceID, serviceName); err != nil {
-				log.Println("Failed to report healthy state: " + err.Error())
+				logger.Error("Failed to report healthy state", zap.Error(err))
 			}
 			time.Sleep(1 * time.Second)
 		}
 	}()
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
-	repo, err := mysql.New()
+	repo, err := mysql.New(logger)
 	if err != nil {
-		panic(err)
+		log.Fatal("Failed to establish mySQL connection", zap.Error(err))
 	}
-	ctrl := rating.New(repo, nil)
-	h := grpchandler.New(ctrl)
+	ctrl := rating.New(repo, nil, logger)
+	h := grpchandler.New(ctrl, logger)
 	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", cfg.APIConfig.Port))
 	if err != nil {
 		log.Fatalf("Failed to listen: %v", err)
@@ -83,13 +89,13 @@ func main() {
 		defer wg.Done()
 		s := <-sigChan
 		cancel()
-		log.Printf("Received signal %v, attempting graceful shutdown", s)
+		logger.Info("Received stop signal, gracefully stopping", zap.String("signal", s.String()))
 		srv.GracefulStop()
-		log.Println("Gracefully stopped gRPC server")
+		logger.Info("Gracefully stopped gRPC server")
 	}()
 
 	if err := srv.Serve(lis); err != nil {
-		panic(err)
+		logger.Fatal("Failed to start grpc server", zap.Error(err))
 	}
 	wg.Wait()
 }

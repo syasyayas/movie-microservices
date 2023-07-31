@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -11,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 	"gopkg.in/yaml.v3"
@@ -25,35 +25,37 @@ import (
 const serviceName = "metadata"
 
 func main() {
+	logger, _ := zap.NewProduction()
+	logger = logger.With(zap.String("service", serviceName))
 	f, err := os.Open("base.yaml")
 	if err != nil {
-		panic(err)
+		logger.Fatal("Failed to open config file", zap.Error(err))
 	}
 	defer f.Close()
 	var cfg serviceConfig
 
 	registry, err := consul.NewRegistry("consul:8500")
 	if err != nil {
-		panic(err)
+		logger.Fatal("Failed to establish consul connection", zap.Error(err))
 	}
 
 	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
-		panic(err)
+		logger.Fatal("Failed to decode config file", zap.Error(err))
 	}
-	log.Printf("Starting the movie metadata service on port %d", cfg.APIConfig.Port)
+	logger.Info("Starting the movie metadata service on port", zap.Int("port", cfg.APIConfig.Port))
 
 	ctx, cancel := context.WithCancel(context.Background())
 
 	instanceID := discovery.GenerateInstanceID(serviceName)
 
 	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("metadata:%d", cfg.APIConfig.Port)); err != nil {
-		panic(err)
+		logger.Fatal("Faile to register service in consul", zap.Error(err))
 	}
 
 	go func() {
 		for {
 			if err := registry.ReportHealthyState(instanceID, serviceName); err != nil {
-				log.Println("Failed to report healthy state: " + err.Error())
+				logger.Error("Failed to report healthy state", zap.Error(err))
 			}
 			time.Sleep(1 * time.Second)
 		}
@@ -65,7 +67,7 @@ func main() {
 	h := grpchandler.New(ctrl)
 	lis, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", cfg.APIConfig.Port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		logger.Fatal("failed to listen", zap.Error(err))
 	}
 	srv := grpc.NewServer()
 	reflection.Register(srv)
@@ -80,13 +82,13 @@ func main() {
 		defer wg.Done()
 		s := <-sigChan
 		cancel()
-		log.Printf("Received signall %v, attemting graceful shutdown", s)
+		logger.Info("Received signall, attemting graceful shutdown", zap.String("signal", s.String()))
 		srv.GracefulStop()
-		log.Println("Gracefully stopped gRPC metadata service")
+		logger.Info("Gracefully stopped gRPC metadata service")
 	}()
 
 	if err := srv.Serve(lis); err != nil {
-		panic(err)
+		logger.Fatal("Failed to serve grpc", zap.Error(err))
 	}
 	wg.Wait()
 }

@@ -16,8 +16,7 @@ tasks:
       - cp ./bin/movie_main ./movie/main
       - cp ./bin/rating_main ./rating/main
       - cp ./bin/metadata_main ./metadata/main
-      - docker compose up --build -d --remove-orphans 
-      - docker compose logs -f >> docker.log &
+      - docker compose up --build --remove-orphans 
   clean:
     cmds:
       - rm -r ./bin

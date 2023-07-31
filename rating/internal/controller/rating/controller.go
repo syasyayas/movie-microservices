@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 
+	"go.uber.org/zap"
 	"moviedata.com/rating/internal/repository"
 	"moviedata.com/rating/pkg/model"
 )
 
 // ErrNotFound is returned when no ratings are found for a record.
-var ErrNotFound = errors.New("ASKHLJAHF:JAHDratings not found for a record")
+var ErrNotFound = errors.New("ratings not found for a record")
 
 type ratingRepository interface {
 	Get(ctx context.Context, recordID model.RecordID, recordType model.RecordType) ([]model.Rating, error)
@@ -21,16 +22,19 @@ type ratingIngester interface {
 
 // Controller defines a rating service controller.
 type Controller struct {
+	logger   *zap.Logger
 	repo     ratingRepository
 	ingester ratingIngester
 }
 
 // New creates a rating service controller.
-func New(repo ratingRepository, ingester ratingIngester) *Controller {
-	return &Controller{repo, ingester}
+func New(repo ratingRepository, ingester ratingIngester, logger *zap.Logger) *Controller {
+	logger = logger.With(zap.String("component", "contoller"))
+	return &Controller{logger, repo, ingester}
 }
 
 func (c *Controller) GetAggregatedRating(ctx context.Context, recordID model.RecordID, recordType model.RecordType) (float64, error) {
+	c.logger.Debug("Executing GetAggregatedRating method")
 	ratings, err := c.repo.Get(ctx, recordID, recordType)
 	if err != nil && errors.Is(err, repository.ErrNotFound) {
 		return 0, ErrNotFound
@@ -46,6 +50,7 @@ func (c *Controller) GetAggregatedRating(ctx context.Context, recordID model.Rec
 }
 
 func (c *Controller) PutRating(ctx context.Context, recordID model.RecordID, recordType model.RecordType, rating *model.Rating) error {
+	c.logger.Debug("Executing PutRating method")
 	return c.repo.Put(ctx, recordID, recordType, rating)
 }
 

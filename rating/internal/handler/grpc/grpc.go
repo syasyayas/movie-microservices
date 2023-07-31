@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"moviedata.com/gen"
@@ -14,11 +15,13 @@ import (
 
 type Handler struct {
 	gen.UnsafeRatingServiceServer
-	ctrl *rating.Controller
+	ctrl   *rating.Controller
+	logger *zap.Logger
 }
 
-func New(ctrl *rating.Controller) *Handler {
-	return &Handler{ctrl: ctrl}
+func New(ctrl *rating.Controller, logger *zap.Logger) *Handler {
+	logger = logger.With(zap.String("component", "grpchandler"))
+	return &Handler{ctrl: ctrl, logger: logger}
 }
 
 func (h *Handler) GetAggregatedRating(ctx context.Context, req *gen.GetAggregatedRatingRequest) (*gen.GetAggregatedRatingResponse, error) {
@@ -29,6 +32,7 @@ func (h *Handler) GetAggregatedRating(ctx context.Context, req *gen.GetAggregate
 	if err != nil && errors.Is(err, rating.ErrNotFound) {
 		return nil, status.Errorf(codes.NotFound, err.Error())
 	} else if err != nil {
+		h.logger.Error("Failed to process request", zap.Error(err), zap.String("endpoint", "GetAggregatedRating"))
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 
@@ -48,6 +52,7 @@ func (h *Handler) PutRating(ctx context.Context, req *gen.PutRatingRequest) (*ge
 			Value:  model.RatingValue(req.RatingValue),
 		})
 	if err != nil {
+		h.logger.Error("Failed to process request", zap.Error(err), zap.String("endpoint", "PutRating"))
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}
 	return &gen.PutRatingResponse{}, nil
