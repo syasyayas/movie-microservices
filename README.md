@@ -35,3 +35,4 @@
 `go run ./test/integration/*.go`
 
 Для ручного тестирование проекта используйте Postman gRPC server reflect или grpcurl. Сниппеты с grpcurl примерами будут добавлены позднее.
+
